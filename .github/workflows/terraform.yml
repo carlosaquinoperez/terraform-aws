@@ -1,0 +1,36 @@
+name: "Terraform Automation"
+
+on:
+  push:
+    branches:
+      - main  # Se activa cuando haces "push" a la rama principal
+  pull_request: # Se activa cuando alguien propone un cambio
+
+jobs:
+  terraform_job:
+    name: "Plan and Apply"
+    runs-on: ubuntu-latest # El robot usará una computadora con Linux
+    
+    # Aquí conectamos los secretos de la "bóveda" con el robot
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: "us-east-1"
+
+    steps:
+      - name: "1. Descargar el código"
+        uses: actions/checkout@v4
+
+      - name: "2. Instalar Terraform"
+        uses: hashicorp/setup-terraform@v3
+
+      - name: "3. Inicializar (Terraform Init)"
+        run: terraform init
+
+      - name: "4. Previsualizar (Terraform Plan)"
+        run: terraform plan
+
+      - name: "5. Ejecutar (Terraform Apply)"
+        # Solo ejecuta el apply si estamos en la rama 'main' y NO es un Pull Request
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
