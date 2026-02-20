@@ -4,8 +4,8 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "nombre_bucket_bronze" {
-  description = "Nombre único para el bucket de datos crudos"
-  type        = string
-  default     = "carlos-data-bronze-2026"
+variable "capas_datalake" {
+  description = "Las capas de la arquitectura medallón"
+  type        = set(string)
+  default     = ["bronze", "silver", "gold"]
 }

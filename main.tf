@@ -10,12 +10,16 @@ provider "aws" {
   region = var.region
 }
 
-resource "aws_s3_bucket" "capa_bronze" {
-  bucket = var.nombre_bucket_bronze
+# UN SOLO BLOQUE PARA CREAR MULTIPLES BUCKETS
+resource "aws_s3_bucket" "capas_medallon" {
+  for_each = var.capas_datalake
+
+  # El nombre final será algo como: datalake-bronze-2026
+  bucket = "datalake-${each.key}-2026"
 
   tags = {
-    Name        = "Data Lake Bronze"
+    Name        = "Capa ${each.key}"
     Environment = "Dev"
-    Project     = "Curso Terraform" # Mencionando tu startup ;)
+    Arquitectura = "Medallon"
   }
 }
