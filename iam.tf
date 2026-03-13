@@ -23,3 +23,29 @@ resource "aws_iam_policy" "datalake_access" {
     ]
   })
 }
+
+# 2. Creamos el Rol (El "gafete" para la máquina de procesamiento)
+resource "aws_iam_role" "datalake_role" {
+  name = "SpikioDataProcessorRole"
+
+  # Trust Policy: Define QUIÉN se puede poner este gafete
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          # Permitimos que servicios como AWS Glue (o integraciones de Spark) asuman este rol
+          Service = "glue.amazonaws.com" 
+        }
+      },
+    ]
+  })
+}
+
+# 3. Engrapamos el Documento al Gafete (Role Policy Attachment)
+resource "aws_iam_role_policy_attachment" "datalake_attach" {
+  role       = aws_iam_role.datalake_role.name      # El nombre del rol que acabamos de crear
+  policy_arn = aws_iam_policy.datalake_access.arn   # El ARN de la política que tú ya tenías arriba
+}
