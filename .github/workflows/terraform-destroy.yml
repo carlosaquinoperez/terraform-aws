@@ -1,0 +1,27 @@
+name: "Terraform DESTROY (Peligro)"
+
+on:
+  workflow_dispatch: # <--- ESTO ES MAGIA. Crea un botón manual en la interfaz de GitHub.
+
+jobs:
+  terraform_destroy:
+    name: "Tear Down Infrastructure"
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: "us-east-1"
+
+    steps:
+      - name: "1. Descargar el código"
+        uses: actions/checkout@v4
+
+      - name: "2. Instalar Terraform"
+        uses: hashicorp/setup-terraform@v3
+
+      - name: "3. Inicializar (Terraform Init)"
+        run: terraform init
+
+      - name: "4. EJECUTAR DESTRUCCIÓN (Terraform Destroy)"
+        run: terraform destroy -auto-approve
