@@ -49,3 +49,10 @@ resource "aws_iam_role_policy_attachment" "datalake_attach" {
   role       = aws_iam_role.datalake_role.name      # El nombre del rol que acabamos de crear
   policy_arn = aws_iam_policy.datalake_access.arn   # El ARN de la política que tú ya tenías arriba
 }
+
+# 4. Le damos permiso al Rol para que pueda escribir en el Catálogo de Glue
+resource "aws_iam_role_policy_attachment" "glue_service_attach" {
+  role       = aws_iam_role.datalake_role.name
+  # Esta es una política administrada por AWS (ya viene pre-creada)
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}

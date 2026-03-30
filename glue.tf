@@ -19,3 +19,25 @@ resource "aws_glue_catalog_database" "datalake_dbs" {
     Capa         = each.key
   }
 }
+
+# Creamos el Crawler para la capa Bronze
+resource "aws_glue_crawler" "bronze_crawler" {
+  name          = "spikio_bronze_crawler"
+  
+  # Le ponemos el gafete de seguridad que creamos en iam.tf
+  role          = aws_iam_role.datalake_role.arn
+  
+  # Le decimos en qué base de datos guardar los resultados
+  database_name = aws_glue_catalog_database.datalake_dbs["bronze"].name
+
+  # Le decimos a dónde tiene que ir a leer los datos físicos
+  s3_target {
+    path = "s3://${aws_s3_bucket.capas_medallon["bronze"].bucket}/data/"
+  }
+
+  tags = {
+    Environment  = "Dev"
+    Arquitectura = "Medallon"
+    Capa         = "bronze"
+  }
+}
