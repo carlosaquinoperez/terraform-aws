@@ -41,3 +41,25 @@ resource "aws_glue_crawler" "bronze_crawler" {
     Capa         = "bronze"
   }
 }
+
+# Creamos el Crawler para la capa Silver
+resource "aws_glue_crawler" "silver_crawler" {
+  name          = "spikio_silver_crawler"
+  
+  # Reutilizamos el mismo gafete de seguridad
+  role          = aws_iam_role.datalake_role.arn
+  
+  # Lo conectamos a la base de datos Silver
+  database_name = aws_glue_catalog_database.datalake_dbs["silver"].name
+
+  # Apuntamos a la carpeta de datos de la capa Silver
+  s3_target {
+    path = "s3://${aws_s3_bucket.capas_medallon["silver"].bucket}/data/"
+  }
+
+  tags = {
+    Environment  = "Dev"
+    Arquitectura = "Medallon"
+    Capa         = "silver"
+  }
+}
