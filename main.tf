@@ -1,25 +1,28 @@
+# main.tf
+
 terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
   backend "s3" {
-    bucket = "spikio-tfstate-2026"
-    key    = "dev/terraform.tfstate"
-    region = "us-east-1"
+    bucket         = "spikio-tfstate-2026"
+    key            = "terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
   }
 }
 
 provider "aws" {
-  region = var.region
+  region = "us-east-1"
 }
 
-# UN SOLO BLOQUE PARA CREAR MULTIPLES BUCKETS
-resource "aws_s3_bucket" "capas_medallon" {
-  for_each = var.capas_datalake
-
-  # El nombre final será algo como: datalake-bronze-2026
-  bucket = "datalake-${each.key}-2026"
-
-  tags = {
-    Name        = "Capa ${each.key}"
-    Environment = "Dev"
-    Arquitectura = "Medallon"
-  }
+module "spikio_datalake_dev" {
+  source          = "./modules/datalake"
+  
+  project_name    = "spikio"
+  environment     = "dev"
+  etl_script_path = "./job_bronze_to_silver.py"
 }
