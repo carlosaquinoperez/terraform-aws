@@ -12,7 +12,7 @@
 
 This repository contains the Infrastructure as Code (IaC) and Data Engineering pipelines required to deploy a fully automated, serverless Data Lakehouse for **[spikio.app](https://spikio.app)** — an AI-driven English learning platform via WhatsApp.
 
-The goal of this project is to securely ingest, process, and catalog millions of WhatsApp chat interactions, transforming raw JSON data into highly optimized Parquet format for analytics and Machine Learning, using AWS native services and PySpark.
+The goal of this project is to securely ingest, process, and catalog millions of WhatsApp chat interactions, transforming raw JSON data into highly optimized Parquet format for analytics and Machine Learning. The architecture is designed as a **Reusable Terraform Module**, allowing seamless and isolated deployments across multiple environments (Dev, QA, Prod) with dynamic resource naming.
 
 ---
 
@@ -20,12 +20,12 @@ The goal of this project is to securely ingest, process, and catalog millions of
 
 The project implements a **Medallion Architecture** (Bronze → Silver → Gold) entirely provisioned via Terraform.
 
-### Layers
+### Layers & Services
 
 | Layer | Service | Description |
 |---|---|---|
 | **Storage** | Amazon S3 | Medallion buckets: Bronze (raw JSON), Silver (clean Parquet), Gold (aggregated Data Marts) |
-| **Security** | AWS IAM | Least-privilege roles and policies for machine identities (AWS Glue) |
+| **Security** | AWS IAM | Environment-isolated, least-privilege roles for machine identities |
 | **Data Catalog** | AWS Glue Catalog & Crawler | Automated schema discovery and metadata management |
 | **Compute & ETL** | AWS Glue + PySpark | Serverless distributed data processing |
 | **Query Engine** | Amazon Athena | Ad-hoc serverless SQL querying over S3 data |
@@ -51,19 +51,23 @@ All infrastructure and ETL scripts are deployed automatically using **GitHub Act
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository Structure (Modular Design)
+
+The infrastructure is separated into a reusable factory (`modules/datalake`) and a root client configuration, keeping business logic (Python) completely decoupled from the IaC.
 
 ```text
 ├── .github/workflows/
 │   ├── terraform.yml           # CI/CD Pipeline for Apply
 │   └── terraform-destroy.yml   # Manual Pipeline for Destroy
-├── etl.tf                      # AWS Glue Job provisioning
-├── glue.tf                     # AWS Glue Catalog & Crawlers
-├── iam.tf                      # Roles and Policies for secure access
-├── main.tf                     # S3 Buckets creation (Medallion Architecture)
-├── variables.tf                # Terraform variables
-├── outputs.tf                  # Terraform outputs
-├── job_bronze_to_silver.py     # PySpark ETL script
+├── modules/datalake/           # 📦 Reusable Terraform Module (The Factory)
+│   ├── etl.tf                  # Glue Jobs provisioning
+│   ├── glue.tf                 # Data Catalog & Crawlers
+│   ├── iam.tf                  # Isolated Roles and Policies
+│   ├── main.tf                 # Medallion S3 Buckets
+│   └── variables.tf            # Module parameters (Project, Env, etc.)
+├── ingesta_bronze.py           # Mock ingestion script
+├── job_bronze_to_silver.py     # PySpark ETL script (Business Logic)
+├── main.tf                     # Root client invoking the datalake module
 └── README.md                   # Project documentation
 ```
 
@@ -77,21 +81,32 @@ All infrastructure and ETL scripts are deployed automatically using **GitHub Act
 2. The following **GitHub Repository Secrets** configured:
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
-3. A pre-created **S3 bucket** for the Terraform backend (defined in `main.tf`).
+3. A pre-created **S3 bucket** for the Terraform backend (defined in root `main.tf`).
 
 ### Deployment Steps
 
-1. Make changes to `.tf` files or the PySpark ETL script (`.py`).
-2. Commit and push to the `main` branch:
+1. To deploy to a different environment, adjust the `environment` variable in the root `main.tf`:
+
+```hcl
+module "spikio_datalake_dev" {
+  source          = "./modules/datalake"
+  project_name    = "spikio"
+  environment     = "dev" # Change to "qa" or "prod" as needed
+  etl_script_path = "./job_bronze_to_silver.py"
+}
+```
+
+2. Commit and push your changes to the `main` branch:
 
 ```bash
 git add .
-git commit -m "feat: updating data pipelines"
+git commit -m "feat: infrastructure updates"
 git push origin main
 ```
 
-3. **GitHub Actions** will automatically provision the infrastructure and upload the latest ETL script to AWS.
-4. To run the ETL manually, navigate to the **AWS Glue Console**, select the job `spikio_etl_bronze_to_silver`, and click **Run**.
+3. **GitHub Actions** will automatically provision the isolated infrastructure and upload the latest ETL script to AWS.
+
+4. To run the ETL manually, navigate to the **AWS Glue Console**, select the generated job (e.g., `spikio_dev_etl_bronze_to_silver`), and click **Run**.
 
 ---
 
@@ -103,7 +118,7 @@ To prevent incurring AWS charges when the development environment is not in use:
 2. Select the **`Terraform DESTROY (Peligro ⚠️)`** workflow.
 3. Click **Run workflow**.
 
-This will execute `terraform destroy` and cleanly remove all provisioned cloud resources.
+This will execute `terraform destroy` and cleanly remove all provisioned cloud resources for that specific environment.
 
 ---
 
